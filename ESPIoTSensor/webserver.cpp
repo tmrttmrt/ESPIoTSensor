@@ -4,17 +4,17 @@
 	Based on airRohr firmware Copyright (C) 2016  Code for Stuttgart a.o.
 	
 	This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 
@@ -24,10 +24,11 @@
 #include <EEPROM.h>
 #include "ESPIoTSensor.h"
 
-extern struct params myParams;
+extern struct settings currSettings;
 extern String esp_chipid;
 
 String server_name;
+long last_page_load = millis();
 ESP8266WebServer server(80);
 const char TXT_CONTENT_TYPE_JSON[] PROGMEM = "application/json";
 const char TXT_CONTENT_TYPE_INFLUXDB[] PROGMEM = "application/x-www-form-urlencoded";
@@ -129,32 +130,33 @@ void webserver_root() {
 	String page_content = make_header(F("Configure"));
 	String masked_pwd = "";
 	int i = 0;
-//	last_page_load = millis();
+	last_page_load = millis();
 
 	if (server.method() == HTTP_GET) {
 		page_content += F("<form method='POST' action='/' style='width:100%;'><b>");
 		page_content += F("WiFi Settings");
 		page_content += F("</b><br/>");
 		page_content += F("<table>");
-		page_content += form_input("wlanssid", F("WLAN"), myParams.ssid, 64);
-		page_content += form_password("wlanpwd", F("Password"), myParams.password, 64);
-		page_content += form_input("wifiTimeout", F("WLAN Timeout"), String(myParams.wifiTimeout/1000), 64);
+		page_content += form_input("wlanssid", F("WLAN"), currSettings.ssid, 64);
+		page_content += form_password("wlanpwd", F("Password"), currSettings.password, 64);
+		page_content += form_input("wifiTimeout", F("WLAN Timeout"), String(currSettings.wifiTimeout/1000), 64);
 		page_content += F("</table><br/><hr/><b>");
 		page_content += F("<b>InfluxDB Settings");
 		page_content += F("</b><br/>");
 		page_content += F("<table>");
-		page_content += form_input("dbase_host", F("dbase_host"), myParams.influxDBHost, 50);
-		page_content += form_input("dbase_port", F("dbase_port"), String(myParams.influxDBPort), 30);
-		page_content += form_input("dbase_user", F("dbase_user"), myParams.dbUser, 50);
-		page_content += form_password("dbase_passwd", F("dbase_passwd"), myParams.dbPasswd, 50);
-		page_content += form_input("sensor_name", F("sensor_name"), myParams.sensName, 50);
-		page_content += form_input("location_tag", F("location_tag"), myParams.dbLocationTag, 50);
+		page_content += form_input("dbase_host", F("dbase_host"), currSettings.influxDBHost, 50);
+		page_content += form_input("dbase_port", F("dbase_port"), String(currSettings.influxDBPort), 30);
+		page_content += form_input("dbase_name", F("dbase_name"), currSettings.dbName, 50);
+		page_content += form_input("dbase_user", F("dbase_user"), currSettings.dbUser, 50);
+		page_content += form_password("dbase_passwd", F("dbase_passwd"), currSettings.dbPasswd, 50);
+		page_content += form_input("sensor_name", F("sensor_name"), currSettings.sensName, 50);
+		page_content += form_input("location_tag", F("location_tag"), currSettings.dbLocationTag, 50);
 		page_content += F("</table><br/><hr/><b>");
 		page_content += F("<b>Sleep Settings");
 		page_content += F("</b><br/>");
 		page_content += F("<table>");
-		page_content += form_checkbox("enable_sleep", F("enable_sleep"), myParams.sleep);
-		page_content += form_input("sleep_time", F("sleep_time"), String(myParams.sleepTime), 50);
+		page_content += form_checkbox("enable_sleep", F("enable_sleep"), currSettings.sleep);
+		page_content += form_input("sleep_time", F("sleep_time"), String(currSettings.sleepTime), 50);
 		page_content += F("</table><br/><hr/><b>");
 		page_content += form_submit(F("Save"));
 
@@ -168,30 +170,31 @@ void webserver_root() {
 #define readPasswdParam(param,dest) if (server.hasArg(#param)){ i = 0; masked_pwd = ""; for (i=0;i<server.arg(#param).length();i++) masked_pwd += "*"; if (masked_pwd != server.arg(#param) || server.arg(#param) == "") { server.arg(#param).toCharArray(dest, sizeof(dest)); } }
 
 		if (server.hasArg("wlanssid") && server.arg("wlanssid") != "") {
-			readCharParam(myParams.ssid, myParams.ssid);
-			readPasswdParam(myParams.password, myParams.password);
+			readCharParam(wlanssid, currSettings.ssid);
+			readPasswdParam(wlanpwd, currSettings.password);
 		}
-		readTimeParam(wifiTimeout, myParams.wifiTimeout);
-		readCharParam(dbase_host, myParams.influxDBHost);
-		readIntParam(dbase_port, myParams.influxDBPort);
-		readCharParam(dbase_user,myParams.dbUser);
-		readPasswdParam(dbase_passwd, myParams.dbPasswd);
-		readCharParam(sensor_name,myParams.sensName);
-		readCharParam(location_tag,myParams.dbLocationTag);
-		readIntParam(sleep_time, myParams.sleepTime);
-		readBoolParam(enable_sleep,myParams.sleep);
+		readTimeParam(wifiTimeout, currSettings.wifiTimeout);
+		readCharParam(dbase_host, currSettings.influxDBHost);
+		readIntParam(dbase_port, currSettings.influxDBPort);
+		readCharParam(dbase_user,currSettings.dbUser);
+		readCharParam(dbase_name,currSettings.dbName);
+		readPasswdParam(dbase_passwd, currSettings.dbPasswd);
+		readCharParam(sensor_name,currSettings.sensName);
+		readCharParam(location_tag,currSettings.dbLocationTag);
+		readIntParam(sleep_time, currSettings.sleepTime);
+		readBoolParam(enable_sleep,currSettings.sleep);
 #undef readCharParam
 #undef readBoolParam
 #undef readIntParam
-		page_content += line_from_value(F("WLAN"),myParams.ssid);
-		page_content += line_from_value(F("wifiTimeout"),String(myParams.wifiTimeout/1000));
-		page_content += line_from_value(F("dbase_host"), myParams.influxDBHost);
-		page_content += line_from_value(F("dbase_port"), String(myParams.influxDBPort));
-		page_content += line_from_value(F("dbase_user"), myParams.dbUser);
-		page_content += line_from_value(F("sensor_name"), myParams.sensName);
-		page_content += line_from_value(F("location_tag"), myParams.dbLocationTag);
-		page_content += line_from_value(F("enable_sleep"), String(myParams.sleep));
-		page_content += line_from_value(F("sleep_time"), String(myParams.sleepTime));
+		page_content += line_from_value(F("WLAN"),currSettings.ssid);
+		page_content += line_from_value(F("wifiTimeout"),String(currSettings.wifiTimeout/1000));
+		page_content += line_from_value(F("dbase_host"), currSettings.influxDBHost);
+		page_content += line_from_value(F("dbase_port"), String(currSettings.influxDBPort));
+		page_content += line_from_value(F("dbase_user"), currSettings.dbUser);
+		page_content += line_from_value(F("sensor_name"), currSettings.sensName);
+		page_content += line_from_value(F("location_tag"), currSettings.dbLocationTag);
+		page_content += line_from_value(F("enable_sleep"), String(currSettings.sleep));
+		page_content += line_from_value(F("sleep_time"), String(currSettings.sleepTime));
 		page_content += F("<br/>");
 		page_content += F("<br/>");
 		page_content += F("All parameters saved to EEPROM. Restarting ...");
@@ -201,11 +204,9 @@ void webserver_root() {
 	page_content += "</div></body></html>\r\n";
 	server.send(200, FPSTR(TXT_CONTENT_TYPE_TEXT_HTML), page_content);
 	if(save){
-		EEPROM.begin(sizeof(params));
-		EEPROM.put(0,myParams);
-		EEPROM.end();
+		save_settings();
 		delay(500);
-		ESP.reset();
+		ESP.restart();
 	}
 }
 
@@ -213,6 +214,7 @@ void webserver_root() {
 /* Webserver page not found                                      *
 /*****************************************************************/
 void webserver_not_found() {
+	last_page_load = millis();
 	server.send(404, FPSTR(TXT_CONTENT_TYPE_TEXT_PLAIN), F("Page not found."));
 }
 
@@ -224,6 +226,5 @@ void setup_webserver() {
 	server_name += esp_chipid;
 	server.on("/", webserver_root);
 	server.onNotFound(webserver_not_found);
-
 	server.begin();
 }

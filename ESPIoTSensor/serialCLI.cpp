@@ -1,21 +1,21 @@
 ﻿/*
-    Adopted from Mads Aasvik "Creating a Command Line Interface in Arduino’s Serial Monitor"
-    https://www.norwegiancreations.com/2018/02/creating-a-command-line-interface-in-arduinos-serial-monitor/
+	Adopted from Mads Aasvik "Creating a Command Line Interface in Arduino’s Serial Monitor"
+	https://www.norwegiancreations.com/2018/02/creating-a-command-line-interface-in-arduinos-serial-monitor/
 
-    Copyright (C) 2018 T. Mertelj
-    
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+	Copyright (C) 2018 T. Mertelj
+	
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 #include <Arduino.h>
@@ -24,7 +24,7 @@
 #include "ESPIoTSensor.h"
 #include "serialCLI.h"
 
-extern struct params myParams;
+extern struct settings currSettings;
 
 bool error_flag = false;
 
@@ -49,18 +49,18 @@ const strCmd commands[]={
 
 //List of SET parameters command names
 const strSetPara set_para[] = {
-	{"wifi_ssid", { .pstr = myParams.ssid}, pt_string},
-	{"wifi_passwd", { .pstr = myParams.password}, pt_string},
-	{"wifiTimeout", { .pulong = &myParams.wifiTimeout}, pt_ulong},
-	{"dbase_host", { .pstr = myParams.influxDBHost}, pt_string},
-	{"dbase_port", {.puint16 = &myParams.influxDBPort}, pt_uint16},
-	{"dbase_name", { .pstr = myParams.database}, pt_string},
-	{"dbase_user", { .pstr = myParams.dbUser}, pt_string},
-	{"sensor_name", { .pstr = myParams.sensName}, pt_string},
-	{"location_tag", { .pstr = myParams.dbLocationTag}, pt_string},
-	{"dbase_passwd", { .pstr = myParams.dbPasswd}, pt_string},
-	{"sleep_time", {.pulong = &myParams.sleepTime}, pt_ulong},
-	{"enable_sleep", {.pbool = &myParams.sleep}, pt_bool}
+	{"wifi_ssid", { .pstr = currSettings.ssid}, pt_string},
+	{"wifi_passwd", { .pstr = currSettings.password}, pt_string},
+	{"wifiTimeout", { .pulong = &currSettings.wifiTimeout}, pt_ulong},
+	{"dbase_host", { .pstr = currSettings.influxDBHost}, pt_string},
+	{"dbase_port", {.puint16 = &currSettings.influxDBPort}, pt_uint16},
+	{"dbase_name", { .pstr = currSettings.dbName}, pt_string},
+	{"dbase_user", { .pstr = currSettings.dbUser}, pt_string},
+	{"sensor_name", { .pstr = currSettings.sensName}, pt_string},
+	{"location_tag", { .pstr = currSettings.dbLocationTag}, pt_string},
+	{"dbase_passwd", { .pstr = currSettings.dbPasswd}, pt_string},
+	{"sleep_time", {.pulong = &currSettings.sleepTime}, pt_ulong},
+	{"enable_sleep", {.pbool = &currSettings.sleep}, pt_bool}
 };
 
 int num_commands = sizeof(commands) / sizeof(strCmd);
@@ -222,9 +222,9 @@ int cmd_set(){
 						break;
 					case pt_bool:
 						if(atoi(args[2])>0)
-							*set_para[i].pbool=true;
+						*set_para[i].pbool=true;
 						else
-							*set_para[i].pbool=false;
+						*set_para[i].pbool=false;
 						break;
 					}
 					return 0;
@@ -262,10 +262,8 @@ int cmd_set(){
 }
 
 int cmd_save(){
-	EEPROM.begin(sizeof(params));
-	EEPROM.put(0,myParams);
-	EEPROM.end();
+	save_settings();
 	Serial.println("All parameters saved to EEPROM");
 	Serial.println("Restarting ...");
-	ESP.reset();
+	ESP.restart();
 }

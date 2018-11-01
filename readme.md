@@ -15,8 +15,9 @@ In order to run from battery the sensor deep sleeps most of the time. In order t
 For waking from sleep connect also ESP8266-GPIO15 <--> ESP8266-RST pins.
 If ESP8266-GPIO14 is grounded sleep is disabled disregarding the software configuration. 
 
-The device must be configured before the use via a simple command line interface connected to the serial port. 
-Use Arduino or serial terminal. Typed commands must be terminated by '\n' (Ctrl-j).
+The device must be configured before the use via a simple command line interface (CLI) connected to the serial port or built-in web server. 
+
+Use Arduino or serial terminal to acces CLI. Typed commands must be terminated by '\n' (Ctrl-j).
 
 Commands:
 
