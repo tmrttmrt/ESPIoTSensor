@@ -19,12 +19,14 @@
 #include <NTPClient.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266WiFiMulti.h>
+#include <ESP8266WebServer.h>
 #include <WiFiUdp.h>
 #include <InfluxDb.h>
 #include <Adafruit_BME280.h>
 #include <EEPROM.h>
 #include "ESPIoTSensor.h"
 #include "serialCLI.h"
+#include "webserver.h"
 
 struct params myParams;
 String esp_chipid;
@@ -35,7 +37,8 @@ float vBatt  = 0;
 ESP8266WiFiMulti WiFiMulti;
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP);
-Influxdb influxdb(myParams.INFLUXDB_HOST, myParams.INFLUXDB_PORT);
+Influxdb influxdb(myParams.influxDBHost, myParams.influxDBPort);
+extern ESP8266WebServer server;
 
 
 
@@ -43,9 +46,40 @@ void trySleep(){
 	if(myParams.sleep && digitalRead(D5)){
 		Serial.println("");
 		Serial.println("Sleeping ...");
-		ESP.deepSleep(myParams.sleepTime*1e6);
+		ESP.deepSleep(myParams.sleepTime*1000000);
 	}
 }
+
+bool connect_WiFi(){
+	// Connecting to WiFi network
+	Serial.println();
+	Serial.print("Connecting to ");
+	Serial.println(myParams.ssid);
+	
+	//WiFi.begin(ssid, password);
+	WiFiMulti.addAP(myParams.ssid, myParams.password);
+	unsigned long start_time=millis();
+	while (WiFiMulti.run() != WL_CONNECTED) {
+		my_cli();
+		delay(500);
+		Serial.print(".");
+		if(millis()-start_time > myParams.wifiTimeout){
+			Serial.println("");
+			Serial.print("Timeout when connecting to ");
+			Serial.println(myParams.ssid);
+			return false;
+		}
+	}
+	timeClient.begin();
+	Serial.println("");
+	Serial.println("WiFi connected");
+
+
+	// Printing the ESP IP address
+	Serial.println(WiFi.localIP());
+	return true;
+}
+
 
 // only runs once on boot
 void setup() {
@@ -69,7 +103,7 @@ void setup() {
 	if (!bme.begin()) {
 		Serial.println("Could not find a valid BME280 sensor, check wiring!");
 		trySleep();
-		while (1);
+//		while (1);
 	} else {
 		bme.setSampling(
 		Adafruit_BME280::MODE_FORCED,
@@ -80,38 +114,16 @@ void setup() {
 	}
 
 	cli_init();
-
-}
-
-bool connect_WiFi(){
-	// Connecting to WiFi network
-	Serial.println();
-	Serial.print("Connecting to ");
-	Serial.println(myParams.ssid);
-	
-	//WiFi.begin(ssid, password);
-	WiFiMulti.addAP(myParams.ssid, myParams.password);
-	unsigned long start_time=millis();
-	while (WiFiMulti.run() != WL_CONNECTED) {
-		my_cli();
-		delay(500);
-		Serial.print(".");
-		if(millis()-start_time > myParams.wifi_timeout){
-			Serial.println("");
-			Serial.print("Timeout when connecting to ");
-			Serial.println(myParams.ssid);
-			return false;
-		}
+	if(!digitalRead(D5)){
+		Serial.println("");
+		Serial.println(F("Configure mode ..."));
+		connect_WiFi();
+		setup_webserver();
+		Serial.println("HTTP server started");
 	}
-	timeClient.begin();
-	Serial.println("");
-	Serial.println("WiFi connected");
 
-
-	// Printing the ESP IP address
-	Serial.println(WiFi.localIP());
-	return true;
 }
+
 
 void getBME280data() {
 	bme.takeForcedMeasurement();
@@ -125,7 +137,9 @@ void getBME280data() {
 void loop() {
 	static unsigned long last_millis;
 	static bool first=true;
-	
+	if(!digitalRead(D5)){
+		server.handleClient();
+	}
 	my_cli();
 	if((millis()-last_millis>myParams.sleepTime*1000) || first){
 		last_millis=millis();
@@ -146,10 +160,12 @@ void loop() {
 		
 		if (WiFiMulti.run() == WL_CONNECTED){
 			timeClient.update();
-			Serial.println("UTC Time: " + timeClient.getFormattedTime());	
-			influxdb.setDbAuth(myParams.DATABASE, myParams.DB_USER, myParams.DB_PASSWORD);
-			InfluxData m ("feinstaub");
+			Serial.println("UTC Time: " + timeClient.getFormattedTime());
+			Serial.println();
+			influxdb.setDbAuth(myParams.database, myParams.dbUser, myParams.dbPasswd);
+			InfluxData m (myParams.sensName);
 			m.addTag("node", "esp8266-"+esp_chipid);
+			m.addTag("node", myParams.dbLocationTag);
 			m.addValue("BME280_temperature", t);
 			m.addValue("BME280_pressure", p);
 			m.addValue("BME280_humidity", h);

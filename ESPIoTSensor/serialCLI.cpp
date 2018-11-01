@@ -51,14 +51,16 @@ const strCmd commands[]={
 const strSetPara set_para[] = {
 	{"wifi_ssid", { .pstr = myParams.ssid}, pt_string},
 	{"wifi_passwd", { .pstr = myParams.password}, pt_string},
-	{"wifi_timeout", { .pulong = &myParams.wifi_timeout}, pt_ulong},
-	{"dbase_host", { .pstr = myParams.INFLUXDB_HOST}, pt_string},
-	{"dbase_port", {.puint16 = &myParams.INFLUXDB_PORT}, pt_uint16},
-	{"dbase_name", { .pstr = myParams.DATABASE}, pt_string},
-	{"dbase_user", { .pstr = myParams.DB_USER}, pt_string},
-	{"dbase_passwd", { .pstr = myParams.DB_PASSWORD}, pt_string},
-	{"sleep_time", {.pfloat = &myParams.sleepTime}, pt_float},
-	{"sleep", {.pbool = &myParams.sleep}, pt_bool}
+	{"wifiTimeout", { .pulong = &myParams.wifiTimeout}, pt_ulong},
+	{"dbase_host", { .pstr = myParams.influxDBHost}, pt_string},
+	{"dbase_port", {.puint16 = &myParams.influxDBPort}, pt_uint16},
+	{"sensor_name", { .pstr = myParams.database}, pt_string},
+	{"dbase_user", { .pstr = myParams.dbUser}, pt_string},
+	{"sensor_name", { .pstr = myParams.sensName}, pt_string},
+	{"location_tag", { .pstr = myParams.dbLocationTag}, pt_string},
+	{"dbase_passwd", { .pstr = myParams.dbPasswd}, pt_string},
+	{"sleep_time", {.pulong = &myParams.sleepTime}, pt_ulong},
+	{"enable_sleep", {.pbool = &myParams.sleep}, pt_bool}
 };
 
 int num_commands = sizeof(commands) / sizeof(strCmd);

@@ -7,13 +7,15 @@ struct params {
 	
 	char ssid[MAX_PARA_LEN] = "some-ssid";
 	char password[MAX_PARA_LEN] = "some-passwd";
-	char INFLUXDB_HOST[MAX_PARA_LEN] = "some-host";
-	uint16_t INFLUXDB_PORT = 8086;
-	char DATABASE[MAX_PARA_LEN] = "some-database";
-	char DB_USER[MAX_PARA_LEN] = "some-database-user";
-	char DB_PASSWORD[MAX_PARA_LEN] = "some-database-password";
-	float sleepTime=30;
-	unsigned long wifi_timeout=20000;
+	char influxDBHost[MAX_PARA_LEN] = "some-host";
+	uint16_t influxDBPort = 8086;
+	char database[MAX_PARA_LEN] = "some-database";
+	char dbUser[MAX_PARA_LEN] = "some-database-user";
+	char dbPasswd[MAX_PARA_LEN] = "some-database-password";
+	char sensName[MAX_PARA_LEN] = "sensor-name";
+	char dbLocationTag[MAX_PARA_LEN] = "some-location";
+	unsigned long sleepTime=30000000;
+	unsigned long wifiTimeout=20000;
 	bool sleep=false;
 };
 
