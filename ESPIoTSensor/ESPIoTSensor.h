@@ -14,8 +14,8 @@ struct settings {
 	char influxDBHost[MAX_PARA_LEN] = "some-host";
 	uint16_t influxDBPort = 8086;
 	char dbName[MAX_PARA_LEN] = "some-dbName";
-	char dbUser[MAX_PARA_LEN] = "some-dbName-user";
-	char dbPasswd[MAX_PARA_LEN] = "some-dbName-password";
+	char dbUser[MAX_PARA_LEN] = "some-dbase-user";
+	char dbPasswd[MAX_PARA_LEN] = "some-dbase-password";
 	char sensName[MAX_PARA_LEN] = "sensor-name";
 	char dbLocationTag[MAX_PARA_LEN] = "some-location";
 	unsigned long sleepTime=30;
