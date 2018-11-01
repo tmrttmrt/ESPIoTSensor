@@ -37,7 +37,7 @@ float vBatt  = 0;
 ESP8266WiFiMulti WiFiMulti;
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP);
-Influxdb influxdb(myParams.influxDBHost, myParams.influxDBPort);
+Influxdb* influxdb;
 extern ESP8266WebServer server;
 
 
@@ -87,6 +87,8 @@ void setup() {
 	EEPROM.begin(sizeof(params));
 	EEPROM.get(0,myParams);
 	EEPROM.end();
+	
+	influxdb= new Influxdb(myParams.influxDBHost, myParams.influxDBPort);
 
 	pinMode(D5, INPUT_PULLUP);
 	
@@ -162,15 +164,15 @@ void loop() {
 			timeClient.update();
 			Serial.println("UTC Time: " + timeClient.getFormattedTime());
 			Serial.println();
-			influxdb.setDbAuth(myParams.database, myParams.dbUser, myParams.dbPasswd);
+			influxdb->setDbAuth(myParams.database, myParams.dbUser, myParams.dbPasswd);
 			InfluxData m (myParams.sensName);
 			m.addTag("node", "esp8266-"+esp_chipid);
-			m.addTag("node", myParams.dbLocationTag);
+			m.addTag("location", myParams.dbLocationTag);
 			m.addValue("BME280_temperature", t);
 			m.addValue("BME280_pressure", p);
 			m.addValue("BME280_humidity", h);
 			m.addValue("esp8266_vBatt", vBatt);
-			influxdb.write(m);
+			influxdb->write(m);
 		}
 		Serial.print("> ");
 		trySleep();
