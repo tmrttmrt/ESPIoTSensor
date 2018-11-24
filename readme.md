@@ -12,7 +12,7 @@ BME280-VCC <--> ESP8266-VCC (3.3 V)
 
 In order to run from battery the sensor deep sleeps most of the time. In order to decrease current consumption to minimum modules with included regulators and USB <--> RS232 are not recommended.
 
-For waking from sleep connect also ESP8266-GPIO15 <--> ESP8266-RST pins.
+For waking from sleep connect also ESP8266-GPIO16 <--> ESP8266-RST pins.
 If ESP8266-GPIO14 is grounded sleep is disabled disregarding the software configuration. 
 
 The device must be configured before the use via a simple command line interface (CLI) connected to the serial port or built-in web server. 
@@ -23,7 +23,7 @@ Commands:
 
 help <command>
 
-set [parameter] [value]
+set [parameter] [value] 	
 
 save
 
