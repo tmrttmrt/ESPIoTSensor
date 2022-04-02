@@ -27,3 +27,4 @@ set [parameter] [value]
 
 save
 
+(Compiles under Arduino 1.6.13)
