@@ -23,6 +23,7 @@
 #include <ESP8266WebServer.h>
 #include <WiFiUdp.h>
 #include <InfluxDb.h>
+#include <Adafruit_Sensor.h>
 #include <Adafruit_BME280.h>
 #include <EEPROM.h>
 #include "ESPIoTSensor.h"
@@ -205,11 +206,15 @@ void setup() {
 }
 
 
-void getBME280data() {
+bool getBME280data() {
+	bool ret=false;
+  
 	bme.takeForcedMeasurement();
 	h = bme.readHumidity();
 	t = bme.readTemperature();
 	p = bme.readPressure();
+	if(p>0) ret=true;
+	return ret; 
 
 }
 
@@ -230,28 +235,33 @@ void loop() {
 		Serial.println("Starting new measurement:");
 		last_millis=millis();
 		first=false;
-		getBME280data();
+		bool res = getBME280data();
 		//		vBatt = (analogRead (A0)*5.66)/1024;
 		vBatt = ESP.getVcc()/1000.;
-		Serial.println();
-		Serial.println("Humidity: " + String(h) + " %");
-		Serial.println("Temperature: " + String(t) + " deg");
-		Serial.println("Pressure: " + String(p) + " Pa");
-		Serial.println("VBatt: " + String(vBatt) + " V");
-		
-		if (WiFiMulti.run() == WL_CONNECTED){
-			timeClient.update();
-			Serial.println("UTC Time: " + timeClient.getFormattedTime());
-			Serial.println();
-			influxdb->setDbAuth(currSettings.dbName, currSettings.dbUser, currSettings.dbPasswd);
-			InfluxData m (currSettings.sensName);
-			m.addTag("node", "esp8266-"+esp_chipid);
-			m.addTag("location", currSettings.dbLocationTag);
-			m.addValue("BME280_temperature", t);
-			m.addValue("BME280_pressure", p);
-			m.addValue("BME280_humidity", h);
-			m.addValue("esp8266_vBatt", vBatt);
-			influxdb->write(m);
+		if(res){
+				Serial.println();
+				Serial.println("Humidity: " + String(h) + " %");
+				Serial.println("Temperature: " + String(t) + " deg");
+				Serial.println("Pressure: " + String(p) + " Pa");
+				Serial.println("VBatt: " + String(vBatt) + " V");
+				
+				if (WiFiMulti.run() == WL_CONNECTED){
+					timeClient.update();
+					Serial.println("UTC Time: " + timeClient.getFormattedTime());
+					Serial.println();
+					influxdb->setDbAuth(currSettings.dbName, currSettings.dbUser, currSettings.dbPasswd);
+					InfluxData m (currSettings.sensName);
+					m.addTag("node", "esp8266-"+esp_chipid);
+					m.addTag("location", currSettings.dbLocationTag);
+					m.addValue("BME280_temperature", t);
+					m.addValue("BME280_pressure", p);
+					m.addValue("BME280_humidity", h);
+					m.addValue("esp8266_vBatt", vBatt);
+					influxdb->write(m);
+				}
+		} 
+		else {
+			Serial.println("Error reading sensor.");
 		}
 		Serial.print("> ");
 		trySleep();

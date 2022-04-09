@@ -28,3 +28,17 @@ set [parameter] [value]
 save
 
 (Compiles under Arduino 1.6.13)
+
+Libraries:
+InfluxDb at version 3.11.0
+Wire at version 1.0 
+NTPClient at version 3.2.0 
+ESP8266WiFi at version 1.0
+DNSServer at version 1.1.1 
+ESP8266WebServer at version 1.0
+arduino_860875 at version 3.11.0 
+ESP8266HTTPClient at version 1.2 
+Adafruit_Unified_Sensor at version 1.0.2 
+Adafruit_BME280_Library at version 1.1.0 
+SPI at version 1.0
+EEPROM at version 1.0 
